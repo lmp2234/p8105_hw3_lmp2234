@@ -136,4 +136,54 @@ snowfall_plot_violin <- ggplot(filtered_snow, aes(x = factor(year), y = snow, fi
 
 print(snowfall_plot_violin)
 ```
+##Question 2
+
+```{r}
+
+library(janitor)
+
+
+
+
+library(janitor)
+library(dplyr)
+
+covar <- read.csv("./data/nhanes_covar.csv", na.strings = c("NA", "", "."), skip = 4) %>%
+  janitor::clean_names() %>%
+  filter(age >= 21, !is.na(seqn)) %>%
+  mutate(
+    sex = factor(sex, levels = c(1, 2), labels = c("Male", "Female")),
+    education = factor(education, levels = c(1, 2, 3), labels = c("Less than high school", "High school equivalent", "More than high school"))
+  )
+
+accel <- read.csv("./data/nhanes_accel.csv", na.strings = c("NA", "", ".")) %>%
+  janitor::clean_names()
+
+fas_df = 
+  left_join(covar, accel, by = "seqn")
+
+fas_df
+library(tidyr)
+education_summary <- fas_df %>%
+  group_by(education, sex) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  pivot_wider(names_from = sex, values_from = count, values_fill = list(count = 0))
+
+print(education_summary)
+```
+
+```{r}
+library(ggplot2)
+
+age_distribution_histogram <- ggplot(fas_df, aes(x = age, fill = sex)) +
+  geom_histogram(position = "identity", alpha = 0.5, bins = 30) +
+  facet_wrap(~ education, labeller = label_both) +
+  labs(title = "Age Distributions by Sex and Education Category",
+       x = "Age",
+       y = "Count") +
+  theme_minimal() +
+  theme(legend.title = element_blank())
+
+print(age_distribution_histogram)
+```
 
