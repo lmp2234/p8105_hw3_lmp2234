@@ -1,0 +1,12 @@
+---
+title: "p8105_hw3_lmp2234"
+author: "Lisa Pardee"
+date: "2024-10-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
