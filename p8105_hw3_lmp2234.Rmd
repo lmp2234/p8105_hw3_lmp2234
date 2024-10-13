@@ -10,3 +10,92 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
+```{r}
+library(p8105.datasets)
+data("ny_noaa")
+
+summary(ny_noaa)
+dim(ny_noaa)
+
+sum(is.na(ny_noaa))
+colSums(is.na(ny_noaa))
+
+total_obs<-nrow(ny_noaa)
+
+missing_sum <-data.frame(
+  variable = colnames(ny_noaa), 
+  missing_values = colSums(is.na(ny_noaa)), 
+  missing_percentage = (colSums(is.na(ny_noaa)) / total_obs) * 100 ) 
+
+missing_sum<-missing_sum[missing_sum$missing_values >0, ]
+missing_sum
+
+
+```
+The data set provides weather data and contains `r nrow(ny_noaa)` observations and `r ncol(ny_noaa)` variables.The variables named are weather station id (id), date of observation (date), precipitation (prcp) snowfall (snow), snow depth (snwd), maximum temperature (tmax), and minimum temperature (tmin). There is a total of 3387623 missing data values. The variables that have missing data are prcp, snow, snwd, tmax, and tmin. There is a very large portion of missing data for minimum and maximum data, and much missing data for snow and snwd. Overall, this dataset has a substantial portion of missing data. 
+
+#Data Cleaning 
+```{r}
+library(janitor)
+library(dplyr)
+library(lubridate)
+ny_noaa <- ny_noaa %>%
+  clean_names() %>%
+  mutate(
+    prcp = as.numeric(prcp),
+    tmax = as.numeric(tmax),
+    tmin = as.numeric(tmin),
+    snow = as.numeric(snow),
+    snwd = as.numeric(snwd),
+    year = year(ymd(date)),
+    month = month(ymd(date)),
+    day = day(date), 
+    prcp = prcp / 10, 
+    tmax = tmax / 10, 
+    tmin = tmin / 10
+  )
+  
+snowfall_common <-ny_noaa %>%
+  filter(snow>0) %>%
+  count(snow)%>%
+  arrange(snow)
+
+top_n<-5
+
+top_snowfall <- head(snowfall_common, n = top_n) 
+top_snowfall
+
+
+```
+For snowfall, the most commonly observed values are for the smallest recorded snow fall in mm. These are expected to be the most common, because this amount of snowfall is more likely to occur as compared to more extreme weather events that occur more rarely. 
+
+```{r}
+
+library(ggplot2)
+library(patchwork)
+
+avg_temp <- ny_noaa %>%
+  filter(month %in% c(1, 7)) %>%  
+  group_by(id, year, month) %>%  
+  summarize(avg_tmax = mean(tmax, na.rm = TRUE), .groups = 'drop')  
+
+
+ggplot(avg_temp, aes(x = as.factor(month), y = avg_tmax, fill = as.factor(month))) +
+  geom_boxplot() +
+  scale_fill_manual(values = c("blue", "red"), 
+                    labels = c("January", "July")) +
+  labs(title = "Boxplot of Average Max Temperatures in January and July", 
+       x = "Month", 
+       y = "Average Max Temperature (°C)", 
+       fill = "Month") +
+  theme_minimal()
+```
+
+The plots for both January and July appear approximately normally distributed. The average max temperatures are higher July (median of 27 degrees Celsius), compared to January (median of 0 degrees Celsius), which is expected. There is less variability in temperatures for July since the size of the box (i.e., interquartile range) is smaller compared to the box for January. There is more variability in extreme temperature values in January since the whiskers are longer. There apepars to be a few outliers in box January and July which indicate the presence of extreme weather events. 
+
+```{r}
+
+
+
+```
+
