@@ -94,8 +94,46 @@ ggplot(avg_temp, aes(x = as.factor(month), y = avg_tmax, fill = as.factor(month)
 The plots for both January and July appear approximately normally distributed. The average max temperatures are higher July (median of 27 degrees Celsius), compared to January (median of 0 degrees Celsius), which is expected. There is less variability in temperatures for July since the size of the box (i.e., interquartile range) is smaller compared to the box for January. There is more variability in extreme temperature values in January since the whiskers are longer. There apepars to be a few outliers in box January and July which indicate the presence of extreme weather events. 
 
 ```{r}
+library(tidyverse)
+library(ggridges)
+library(patchwork)
 
 
+density_plot<-ggplot(ny_noaa, aes(x = tmax, y = tmin)) +
+  geom_density_2d_filled(alpha = 0.5) +
+  labs(title = "Density Plot of Max vs Min Temperature",
+       x = "Max Temperature (°C) Bins",
+       y = "Min Temperature (°C)") +
+  theme_minimal()
 
+box_plot <- ggplot(ny_noaa, aes(x = tmax_bin, y = tmin)) +
+  geom_boxplot() +
+  labs(title = "Box Plot of Min Temperature by Binned Max Temperature",
+       x = "Max Temperature (°C) Bins",
+       y = "Min Temperature (°C)") +
+  theme_minimal()
+
+combined_plot <- density_plot + box_plot
+
+print(combined_plot)
+
+```
+
+```{r}
+filtered_snow <- ny_noaa %>%
+  filter(snow > 0 & snow < 100)
+
+
+snowfall_plot_violin <- ggplot(filtered_snow, aes(x = factor(year), y = snow, fill = factor(year))) +
+  geom_violin(alpha = 0.7) +
+  labs(title = "Distribution of Snowfall Values (0 < snow < 100) by Year",
+       x = "Year",
+       y = "Snowfall (mm)",
+       fill = "Year") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+
+print(snowfall_plot_violin)
 ```
 
