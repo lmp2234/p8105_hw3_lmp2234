@@ -102,14 +102,14 @@ library(patchwork)
 density_plot<-ggplot(ny_noaa, aes(x = tmax, y = tmin)) +
   geom_density_2d_filled(alpha = 0.5) +
   labs(title = "Density Plot of Max vs Min Temperature",
-       x = "Max Temperature (°C) Bins",
+       x = "Max Temperature (°C) ",
        y = "Min Temperature (°C)") +
   theme_minimal()
 
-box_plot <- ggplot(ny_noaa, aes(x = tmax_bin, y = tmin)) +
+box_plot <- ggplot(ny_noaa, aes(x = tmax, y = tmin)) +
   geom_boxplot() +
   labs(title = "Box Plot of Min Temperature by Binned Max Temperature",
-       x = "Max Temperature (°C) Bins",
+       x = "Max Temperature (°C) ",
        y = "Min Temperature (°C)") +
   theme_minimal()
 
@@ -206,6 +206,7 @@ activity_plot <- ggplot(fas_df, aes(x = age, y = total_activity_minutes, color =
 # Display the plot
 print(activity_plot)
 ```
+
 ```{r}
 activity_long <- fas_df %>%
   pivot_longer(cols = starts_with("min"), 
@@ -225,5 +226,93 @@ activity_plot <- ggplot(activity_long, aes(x = time_point, y = activity_minutes,
 print(activity_plot)
 ```
 #Question 3 
+
+```{r}
+
+Jan_2020 <- read.csv("./data/Jan 2020 Citi.csv", na.strings = c("NA", "", ".")) %>%
+  janitor::clean_names() %>%
+  rename(duration_minutes = duration) %>%
+  rename(membership_type = member_casual) %>%
+  mutate(Date = "January 2020")
+
+Jan_2024 <- read.csv("./data/Jan 2024 Citi.csv", na.strings = c("NA", "", ".")) %>%
+  janitor::clean_names() %>%
+  rename(duration_minutes = duration) %>%
+  rename(membership_type = member_casual) %>%
+  mutate(Date = "January 2024")
+
+July_2020 <- read.csv("./data/July 2020 Citi.csv", na.strings = c("NA", "", ".")) %>%
+  janitor::clean_names() %>%
+  rename(duration_minutes = duration) %>%
+  rename(membership_type = member_casual) %>%
+  mutate(Date = "July 2020")
+
+July_2024 <- read.csv("./data/July 2024 Citi.csv", na.strings = c("NA", "", ".")) %>%
+  janitor::clean_names() %>%
+  rename(duration_minutes = duration) %>%
+  rename(membership_type = member_casual) %>%
+  mutate(Date = "July 2024")
+
+combined_data <- bind_rows(Jan_2020, Jan_2024, July_2020, July_2024)
+
+```
+
+
+```{r}
+combined_table<-combined_data  %>%
+  group_by(Date, membership_type)%>%
+  summarize(total_rides = n(), .groups = 'drop')%>%
+  arrange(Date, membership_type)
+  print(combined_table)
+```
+
+
+```{r}
+popular_stations<-combined_data  %>%
+  filter(Date=="July 2024")  %>%
+  group_by (start_station_name)  %>%
+  summarize(num_rides =n()) %>%
+  arrange(desc(num_rides)) %>%
+  slice_head(n=5)
+
+print(popular_stations)
+```
+
+```{r}
+median_duration<-combined_data  %>%
+  group_by(weekdays, Date) %>%
+  summarize(median_duration = median(duration_minutes, na.rm = TRUE),.groups = 'drop')  %>%
+  mutate(month=sub(" .*", "", Date), 
+         year = sub (".* ", "", Date))
+
+ggplot(median_duration, aes(x=weekdays, y=median_duration, color = year))+ geom_point()+
+  geom_line(aes(group = year))+
+  facet_wrap(~month)+
+  labs (title = "Median Ride Duration by Weekday, Month, and Year", x = "Day of the Week", y = "Median Duration (Minutes)", color = "Year")+ theme_minimal()
+```
+
+
+```{r}
+
+year_2024 <- combined_data %>%
+  filter (grepl("2024", Date)) %>%
+  mutate(month= factor(sub(" .*", "", Date), levels = month.name))
+
+ggplot(year_2024, aes(x = month, y = duration_minutes, fill = membership_type)) +
+  geom_boxplot(position = "dodge") +  
+  facet_wrap(~ rideable_type) +       
+  labs(title = "Distribution of Ride Duration in 2024",
+       x = "Month",
+       y = "Duration (Minutes)",
+       fill = "Membership Status") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+```
+
+
+
+
+
 
 
