@@ -141,10 +141,6 @@ print(snowfall_plot_violin)
 ```{r}
 
 library(janitor)
-
-
-
-
 library(janitor)
 library(dplyr)
 
@@ -185,5 +181,47 @@ age_distribution_histogram <- ggplot(fas_df, aes(x = age, fill = sex)) +
   theme(legend.title = element_blank())
 
 print(age_distribution_histogram)
+```
+
+```{r}
+total_activity <- fas_df %>%
+  mutate(total_activity_minutes = rowSums(select(., starts_with("min")), na.rm = TRUE)) %>%
+  select(seqn, total_activity_minutes)
+
+fas_df <- fas_df %>%
+  left_join(total_activity, by = "seqn")
+
+print(head(fas_df))
+
+activity_plot <- ggplot(fas_df, aes(x = age, y = total_activity_minutes, color = sex)) +
+  geom_point(alpha = 0.6) +  
+  geom_smooth(method = "loess", se = FALSE) + 
+  labs(title = "Total Activity Minutes by Age and Education Level",
+       x = "Age (years)",
+       y = "Total Activity Minutes") +
+  facet_wrap(~ education) +  
+  theme_minimal() +
+  theme(legend.title = element_blank())
+
+# Display the plot
+print(activity_plot)
+```
+```{r}
+activity_long <- fas_df %>%
+  pivot_longer(cols = starts_with("min"), 
+               names_to = "time_point", 
+               values_to = "activity_minutes") %>%
+  mutate(time_point = as.numeric(sub("min", "", time_point)))
+
+activity_plot <- ggplot(activity_long, aes(x = time_point, y = activity_minutes, color = sex, group = seqn)) +
+  geom_line(alpha = 0.4) +  
+  labs(title = "24-Hour Activity Time Courses by Education Level",
+       x = "Time Point (Min)",
+       y = "Activity Minutes") +
+  facet_wrap(~ education, ncol = 1) +  
+  theme_minimal() +
+  theme(legend.title = element_blank())
+
+print(activity_plot)
 ```
 
