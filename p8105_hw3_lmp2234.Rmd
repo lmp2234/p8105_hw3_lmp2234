@@ -224,4 +224,6 @@ activity_plot <- ggplot(activity_long, aes(x = time_point, y = activity_minutes,
 
 print(activity_plot)
 ```
+#Question 3 
+
 
