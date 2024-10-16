@@ -104,7 +104,7 @@ The plots for both January and July appear approximately normally distributed. T
 
 ```{r}
 
-
+ny_noaa <- na.omit(ny_noaa)
 
 density_plot<-ggplot(ny_noaa, aes(x = tmax, y = tmin)) +
   geom_density_2d_filled(alpha = 0.5) +
@@ -120,10 +120,7 @@ box_plot <- ggplot(ny_noaa, aes(x = tmax, y = tmin)) +
        y = "Min Temperature (°C)") +
   theme_minimal()
 
-combined_plot <- density_plot + box_plot
-
-print(combined_plot)
-
+density_plot + box_plot
 ```
 
 ```{r}
@@ -139,7 +136,6 @@ snowfall_plot_violin <- ggplot(filtered_snow, aes(x = factor(year), y = snow, fi
        fill = "Year") +
   theme_minimal() +
   theme(legend.position = "none")
-
 
 print(snowfall_plot_violin)
 ```
@@ -161,7 +157,7 @@ fas_df =
   full_join(covar, accel, by = "seqn")%>%
   drop_na()
 
-fas_df
+print(head(fas_df))
 ```
 
 
@@ -175,9 +171,11 @@ print(education_summary)
 ```
 #This table shows education levels for males and females. For the category of more than high school and less than high school, the number of males and females is similar. However, for high school equivalent, there are more men in this category compared to females. 
 
+#Visualization of Age Distributions 
+
 ```{r}
-age_distribution_histogram <- ggplot(fas_df, aes(x = age, fill = sex)) +
-  geom_histogram(position = "identity", alpha = 0.5, bins = 30) +
+agedistribution_histogram <- ggplot(fas_df, aes(x = age, fill = sex)) +
+  geom_histogram(position = "identity", alpha = 0.5, binwidth = 2) +
   facet_wrap(~ education, labeller = label_both) +
   labs(title = "Age Distributions by Sex and Education Category",
        x = "Age",
@@ -185,8 +183,11 @@ age_distribution_histogram <- ggplot(fas_df, aes(x = age, fill = sex)) +
   theme_minimal() +
   theme(legend.title = element_blank())
 
-print(age_distribution_histogram)
+print(agedistribution_histogram)
 ```
+#This table shows the age distributions for men and women in each education category. Among individuals between ages 20 and 30 in the "more than high school" catrgory, both males and females had high counts compared to the other age categories. For those in the "high school equivalent" category, the highest count for both males and females was around age 20. In the "less than high school" category", as age increased, the counts for both males and females increased. 
+
+
 
 ```{r}
 total_activity <- fas_df %>%
@@ -211,6 +212,7 @@ activity_plot <- ggplot(fas_df, aes(x = age, y = total_activity_minutes, color =
 # Display the plot
 print(activity_plot)
 ```
+#This graph shows total activity levels (in minutes) by age and educational level for males and females. In all education categories, the trend lines for males and females were both negative signifying that as age increases, total activity in minutes decreased for males and females. 
 
 ```{r}
 activity_long <- fas_df %>%
@@ -219,8 +221,9 @@ activity_long <- fas_df %>%
                values_to = "activity_minutes") %>%
   mutate(time_point = as.numeric(sub("min", "", time_point)))
 
-activity_plot <- ggplot(activity_long, aes(x = time_point, y = activity_minutes, color = sex, group = seqn)) +
-  geom_line(alpha = 0.4) +  
+activity_plot <- ggplot(activity_long, aes(x = time_point, y = activity_minutes, fill = sex)) +
+  geom_area(alpha = 0.5, position = "identity") +  
+    geom_smooth(aes(color = sex), method = "loess", se = TRUE, linetype = "solid") + 
   labs(title = "24-Hour Activity Time Courses by Education Level",
        x = "Time Point (Min)",
        y = "Activity Minutes") +
@@ -230,6 +233,10 @@ activity_plot <- ggplot(activity_long, aes(x = time_point, y = activity_minutes,
 
 print(activity_plot)
 ```
+#Based on this plot, the general trend is that activity in minutes tended to be greater among males in the less than high school category and in the high school equivalent category. However, the general trend in the more than high school plot is that females tended to have higher activity in minutes over the course of 24 hours. 
+
+
+
 #Question 3 
 
 ```{r}
