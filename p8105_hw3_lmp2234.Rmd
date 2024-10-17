@@ -6,10 +6,15 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  echo = TRUE, warning = FALSE, fig.width = 8, 
+  fig.height = 6,
+  out.width = "90%"
+)
 ```
 
-#Loading the necessary libraries
+### Problem 1
+#### Loading the necessary libraries
 ```{r}
 library(p8105.datasets)
 library(tidyverse)
@@ -19,16 +24,11 @@ library(lubridate)
 library(ggplot2)
 library(patchwork)
 library(tidyr)
-
 ```
 
-
+#### Reading in data and determining missing values 
 ```{r}
-
 data("ny_noaa")
-
-summary(ny_noaa)
-dim(ny_noaa)
 
 sum(is.na(ny_noaa))
 colSums(is.na(ny_noaa))
@@ -43,13 +43,11 @@ missing_sum <-data.frame(
 missing_sum<-missing_sum[missing_sum$missing_values >0, ]
 missing_sum
 
-
 ```
 The data set provides weather data and contains `r nrow(ny_noaa)` observations and `r ncol(ny_noaa)` variables.The variables named are weather station id (id), date of observation (date), precipitation (prcp) snowfall (snow), snow depth (snwd), maximum temperature (tmax), and minimum temperature (tmin). There is a total of 3387623 missing data values. The variables that have missing data are prcp, snow, snwd, tmax, and tmin. There is a very large portion of missing data for minimum and maximum data, and much missing data for snow and snwd. Overall, this dataset has a substantial portion of missing data. 
 
-#Data Cleaning 
+#### Data Cleaning 
 ```{r}
-
 ny_noaa <- ny_noaa %>%
   clean_names() %>%
   mutate(
@@ -81,8 +79,6 @@ top_snowfall
 For snowfall, the most commonly observed values are for the smallest recorded snow fall in mm. These are expected to be the most common, because this amount of snowfall is more likely to occur as compared to more extreme weather events that occur more rarely. 
 
 ```{r}
-
-
 avg_temp <- ny_noaa %>%
   filter(month %in% c(1, 7)) %>%  
   group_by(id, year, month) %>%  
@@ -100,7 +96,7 @@ ggplot(avg_temp, aes(x = as.factor(month), y = avg_tmax, fill = as.factor(month)
   theme_minimal()
 ```
 
-The plots for both January and July appear approximately normally distributed. The average max temperatures are higher July (median of 27 degrees Celsius), compared to January (median of 0 degrees Celsius), which is expected. There is less variability in temperatures for July since the size of the box (i.e., interquartile range) is smaller compared to the box for January. There is more variability in extreme temperature values in January since the whiskers are longer. There apepars to be a few outliers in box January and July which indicate the presence of extreme weather events. 
+The plots for both January and July appear approximately normally distributed. The average max temperatures are higher July (median of 27 degrees Celsius), compared to January (median of 0 degrees Celsius), which is expected. There is less variability in temperatures for July since the size of the box (i.e., interquartile range) is smaller compared to the box for January. There is more variability in extreme temperature values in January since the whiskers are longer. There appears to be a few outliers in box January and July which indicate the presence of extreme weather events. 
 
 ```{r}
 
@@ -139,10 +135,12 @@ snowfall_plot_violin <- ggplot(filtered_snow, aes(x = factor(year), y = snow, fi
 
 print(snowfall_plot_violin)
 ```
-##Question 2
 
+### Problem 2
+
+#### Reading in the data, cleaning, and merging datasets 
 ```{r}
-covar <- read.csv("./data/nhanes_covar.csv", na.strings = c("NA", "", "."), skip = 4) %>%
+covar <- read.csv("./data/nhanes_covar.csv", skip = 4) %>%
   janitor::clean_names() %>%
   filter(age >= 21, !is.na(seqn)) %>%
   mutate(
@@ -151,13 +149,15 @@ covar <- read.csv("./data/nhanes_covar.csv", na.strings = c("NA", "", "."), skip
   )
 
 accel <- read.csv("./data/nhanes_accel.csv", na.strings = c("NA", "", ".")) %>%
-  janitor::clean_names()
-
+  janitor::clean_names()%>%
+  pivot_longer(
+   starts_with("min"), names_to = "minutes", values_to = "min", names_prefix ="min")
+  
 fas_df = 
   full_join(covar, accel, by = "seqn")%>%
   drop_na()
 
-print(head(fas_df))
+head(fas_df,5)
 ```
 
 
@@ -165,13 +165,15 @@ print(head(fas_df))
 education_summary <- fas_df %>%
   group_by(education, sex) %>%
   summarise(count = n(), .groups = "drop") %>%
-  pivot_wider(names_from = sex, values_from = count, values_fill = list(count = 0))
+  pivot_wider(names_from = sex, values_from = count, values_fill = list(count = 0))%>%
+  as.data.frame()
 
 print(education_summary)
 ```
-#This table shows education levels for males and females. For the category of more than high school and less than high school, the number of males and females is similar. However, for high school equivalent, there are more men in this category compared to females. 
 
-#Visualization of Age Distributions 
+This table shows education levels for males and females. For the category of more than high school and less than high school, the number of males and females is similar. However, for high school equivalent, there are more men in this category compared to females. 
+
+#### Visualization of Age Distributions 
 
 ```{r}
 agedistribution_histogram <- ggplot(fas_df, aes(x = age, fill = sex)) +
@@ -185,21 +187,23 @@ agedistribution_histogram <- ggplot(fas_df, aes(x = age, fill = sex)) +
 
 print(agedistribution_histogram)
 ```
-#This table shows the age distributions for men and women in each education category. Among individuals between ages 20 and 30 in the "more than high school" catrgory, both males and females had high counts compared to the other age categories. For those in the "high school equivalent" category, the highest count for both males and females was around age 20. In the "less than high school" category", as age increased, the counts for both males and females increased. 
+
+This table shows the age distributions for men and women in each education category. Among individuals between ages 20 and 30 in the "more than high school" category, both males and females had high counts compared to the other age categories. For those in the "high school equivalent" category, the highest count for both males and females was around age 20. In the "less than high school" category", as age increased, the counts for both males and females increased. 
 
 
 
 ```{r}
 total_activity <- fas_df %>%
-  mutate(total_activity_minutes = rowSums(select(., starts_with("min")), na.rm = TRUE)) %>%
-  select(seqn, total_activity_minutes)
-
+  group_by(seqn, sex, age, education) %>%
+  summarize(total_activity = sum(min, na.rm = TRUE), .groups = "drop")
+  
+  
 fas_df <- fas_df %>%
-  left_join(total_activity, by = "seqn")
+  left_join(total_activity, by = c("seqn", "sex", "age", "education"))
 
 print(head(fas_df))
 
-activity_plot <- ggplot(fas_df, aes(x = age, y = total_activity_minutes, color = sex)) +
+activity_plot <- ggplot(fas_df, aes(x = age, y = total_activity, color = sex)) +
   geom_point(alpha = 0.6) +  
   geom_smooth(method = "loess", se = FALSE) + 
   labs(title = "Total Activity Minutes by Age and Education Level",
@@ -212,57 +216,61 @@ activity_plot <- ggplot(fas_df, aes(x = age, y = total_activity_minutes, color =
 # Display the plot
 print(activity_plot)
 ```
-#This graph shows total activity levels (in minutes) by age and educational level for males and females. In all education categories, the trend lines for males and females were both negative signifying that as age increases, total activity in minutes decreased for males and females. 
+
+This graph shows total activity levels (in minutes) by age and educational level for males and females. In all education categories, the trend lines for males and females were both negative signifying that as age increases, total activity in minutes decreased for males and females. 
 
 ```{r}
-activity_long <- fas_df %>%
-  pivot_longer(cols = starts_with("min"), 
-               names_to = "time_point", 
-               values_to = "activity_minutes") %>%
-  mutate(time_point = as.numeric(sub("min", "", time_point)))
+hour_activity <- fas_df %>%
+   mutate(minutes = as.numeric(as.character(minutes)),
+   hour= floor(minutes/60), 
+        hour = ifelse(hour>23, 23, hour)) %>%
+  group_by(seqn, sex, education, hour)%>%
+  summarize(total_activity = sum(min, na.rm = TRUE), .groups = "drop")
 
-activity_plot <- ggplot(activity_long, aes(x = time_point, y = activity_minutes, fill = sex)) +
-  geom_area(alpha = 0.5, position = "identity") +  
-    geom_smooth(aes(color = sex), method = "loess", se = TRUE, linetype = "solid") + 
-  labs(title = "24-Hour Activity Time Courses by Education Level",
-       x = "Time Point (Min)",
-       y = "Activity Minutes") +
-  facet_wrap(~ education, ncol = 1) +  
+
+activity_plot <- ggplot(hour_activity, aes(x = hour, y = total_activity, fill= sex)) +
+  geom_area(position = "identity", alpha = 0.6, color = NA)+
+  geom_smooth(aes(color = sex), method = "loess", se = FALSE, size = 1) +
+  labs(title = "24-Hour Activity Time Course by Education Level",
+       x = "Time Point (Hourly)",
+       y = "Total Activity Minutes") +
+  facet_wrap(~ education)+  
   theme_minimal() +
   theme(legend.title = element_blank())
 
 print(activity_plot)
 ```
-#Based on this plot, the general trend is that activity in minutes tended to be greater among males in the less than high school category and in the high school equivalent category. However, the general trend in the more than high school plot is that females tended to have higher activity in minutes over the course of 24 hours. 
+
+Based on this plot, the general trend is that activity in minutes tended to be greater among males in the less than high school category and in the high school equivalent category. However, the general trend in the more than high school plot is that females tended to have higher activity in minutes over the course of 24 hours. 
 
 
 
-#Question 3 
+### Problem 3 
 
 ```{r}
 
-Jan_2020 <- read.csv("./data/Jan 2020 Citi.csv", na.strings = c("NA", "", ".")) %>%
+Jan_2020 <- read.csv("./data/Jan 2020 Citi.csv") %>%
   janitor::clean_names() %>%
   rename(duration_minutes = duration) %>%
   rename(membership_type = member_casual) %>%
   rename(ride_type = rideable_type) %>%
   mutate(Date = "January 2020")
 
-Jan_2024 <- read.csv("./data/Jan 2024 Citi.csv", na.strings = c("NA", "", ".")) %>%
+Jan_2024 <- read.csv("./data/Jan 2024 Citi.csv") %>%
   janitor::clean_names() %>%
   rename(duration_minutes = duration) %>%
   rename(membership_type = member_casual) %>%
   rename(ride_type = rideable_type) %>%
   mutate(Date = "January 2024")
 
-July_2020 <- read.csv("./data/July 2020 Citi.csv", na.strings = c("NA", "", ".")) %>%
+July_2020 <- read.csv("./data/July 2020 Citi.csv") %>%
   janitor::clean_names() %>%
   rename(duration_minutes = duration) %>%
   rename(membership_type = member_casual) %>%
   rename(ride_type = rideable_type) %>%
   mutate(Date = "July 2020")
 
-July_2024 <- read.csv("./data/July 2024 Citi.csv", na.strings = c("NA", "", ".")) %>%
+July_2024 <- read.csv("./data/July 2024 Citi.csv") %>%
   janitor::clean_names() %>%
   rename(duration_minutes = duration) %>%
   rename(membership_type = member_casual) %>%
@@ -270,9 +278,10 @@ July_2024 <- read.csv("./data/July 2024 Citi.csv", na.strings = c("NA", "", ".")
   mutate(Date = "July 2024")
 
 combined_data <- bind_rows(Jan_2020, Jan_2024, July_2020, July_2024)
-combined_data
+head(combined_data, 5)
 
 ```
+
 The combined data set provides information on Citi Bike utilization in New York City for January 2020, January 2024, July 2020, and July 2024, and contains `r nrow(combined_data)` observations and `r ncol(combined_data)` variables.The variable names include ride_id, ride_type, weekdays, duration_minutes, start_station_name, end_station_name, membership_type, and date. Each dataset had the same column names so they were combined using the bind rows option. Some of the original variables (duration, member_casual, and rideable_type" were renamed for clarity purposes. In the dataset, there were no missing (NA values) for any variable except for start_station_name. 
 
 ```{r}
@@ -280,12 +289,13 @@ combined_table<-combined_data  %>%
   group_by(Date, membership_type)%>%
   summarize(total_rides = n(), .groups = 'drop')%>%
   arrange(Date, membership_type)%>%
-  pivot_wider(names_from = membership_type, values_from = total_rides)
-
+  pivot_wider(names_from = membership_type, values_from = total_rides)%>%
+  as.data.frame()
 
   print(combined_table)
 ```
-#These results show that the total number of rides was highest in July 2024 for both casual and member riders. The lowest total number or rides was January 2020 for both type. This also signifies that with time, the total number of rides for casual rider and Citi Bike member utilization has risen. 
+
+These results show that the total number of rides was highest in July 2024 for both casual and member riders. The lowest total number or rides was January 2020 for both type. This also signifies that with time, the total number of rides for casual rider and Citi Bike member utilization has risen. 
 
 ```{r}
 popular_stations<-combined_data  %>%
@@ -293,11 +303,12 @@ popular_stations<-combined_data  %>%
   group_by (start_station_name)  %>%
   summarize(num_rides =n()) %>%
   arrange(desc(num_rides)) %>%
-  slice_head(n=5)
+  slice_head(n=5) %>%
+  as.data.frame()
 
 print(popular_stations)
 ```
-#The 5 most popular starting stations were Pier 61, University Place, W 21 St & 6 Ave, West St & Chambers St, and W 31 St & 7th Ave. Pier 61 at Chelsea Piers had the highest number of rides. 
+The 5 most popular starting stations were Pier 61, University Place, W 21 St & 6 Ave, West St & Chambers St, and W 31 St & 7th Ave. Pier 61 at Chelsea Piers had the highest number of rides. 
 
 
 ```{r}
@@ -314,9 +325,11 @@ ggplot(median_duration, aes(x=weekdays, y=median_duration, color = year))+ geom_
   labs (title = "Median Ride Duration by Weekday, Month, and Year", x = "Day of the Week", y = "Median Duration (Minutes)", 
         color = "Year") +
   scale_color_manual(values = c("2020" = "blue", "2024" = "orange")) +  
-  theme_minimal() 
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-#This plot shows the effects of the day of the week, month, and year on median ride duration. This plot shows that in January 2020, median ride duration was higher compared to January 2024 with the peak weekdays for 2020 being Saturday and Sunday. For July, the highest median duration was in July 2020 compared to July 2024 with the peak weekdays also being the weekend. 
+
+This plot shows the effects of the day of the week, month, and year on median ride duration. This plot shows that in January 2020, median ride duration was higher compared to January 2024 with the peak weekdays for 2020 being Saturday and Sunday. For July, the highest median duration was in July 2020 compared to July 2024 with the peak weekdays also being the weekend. 
 
 ```{r}
 year_2024 <- combined_data %>%
@@ -333,7 +346,8 @@ ggplot(year_2024, aes(x = month, y = duration_minutes, fill = membership_type)) 
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
 ```
-#This plot shows the distribution of ride duration for casual and members in 2024 by bike type. Among those with classic bikes, the distributions for casual and members were similar in January and July. However, for the electric bikes category, casual members tended to have longer ride durations compared to members in July 2024. Also, casual members that used electric bikes in July had a higher median duration of rides. 
+
+This plot shows the distribution of ride duration for casual and members in 2024 by bike type. Among those with classic bikes, the distributions for casual and members were similar in January and July. However, for the electric bikes category, casual members tended to have longer ride durations compared to members in July 2024. Also, casual members that used electric bikes in July had a higher median duration of rides. 
 
 
 
