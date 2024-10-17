@@ -148,7 +148,7 @@ covar <- read.csv("./data/nhanes_covar.csv", skip = 4) %>%
     education = factor(education, levels = c(1, 2, 3), labels = c("Less than high school", "High school equivalent", "More than high school"))
   )
 
-accel <- read.csv("./data/nhanes_accel.csv", na.strings = c("NA", "", ".")) %>%
+accel <- read.csv("./data/nhanes_accel.csv") %>%
   janitor::clean_names()%>%
   pivot_longer(
    starts_with("min"), names_to = "minutes", values_to = "min", names_prefix ="min")
@@ -162,13 +162,15 @@ head(fas_df,5)
 
 
 ```{r}
+library(knitr)
+
 education_summary <- fas_df %>%
   group_by(education, sex) %>%
   summarise(count = n(), .groups = "drop") %>%
   pivot_wider(names_from = sex, values_from = count, values_fill = list(count = 0))%>%
   as.data.frame()
 
-print(education_summary)
+knitr::kable(education_summary, col.names = c("Education", "Males","Females"), caption = "Education Levels by Sex")
 ```
 
 This table shows education levels for males and females. For the category of more than high school and less than high school, the number of males and females is similar. However, for high school equivalent, there are more men in this category compared to females. 
@@ -176,6 +178,7 @@ This table shows education levels for males and females. For the category of mor
 #### Visualization of Age Distributions 
 
 ```{r}
+
 agedistribution_histogram <- ggplot(fas_df, aes(x = age, fill = sex)) +
   geom_histogram(position = "identity", alpha = 0.5, binwidth = 2) +
   facet_wrap(~ education, labeller = label_both) +
@@ -188,7 +191,7 @@ agedistribution_histogram <- ggplot(fas_df, aes(x = age, fill = sex)) +
 print(agedistribution_histogram)
 ```
 
-This table shows the age distributions for men and women in each education category. Among individuals between ages 20 and 30 in the "more than high school" category, both males and females had high counts compared to the other age categories. For those in the "high school equivalent" category, the highest count for both males and females was around age 20. In the "less than high school" category", as age increased, the counts for both males and females increased. 
+This graph shows the age distributions for men and women in each education category. Among individuals between ages 20 and 30 in the "more than high school" category, both males and females had high counts compared to the other age categories. For those in the "high school equivalent" category, the highest count for both males and females was around age 20. In the "less than high school" category", as age increased, the counts for both males and females increased. 
 
 
 
@@ -291,8 +294,8 @@ combined_table<-combined_data  %>%
   arrange(Date, membership_type)%>%
   pivot_wider(names_from = membership_type, values_from = total_rides)%>%
   as.data.frame()
-
-  print(combined_table)
+  
+  knitr::kable(combined_table, col.names = c("Date", "Casual","Member"), caption = "Number of Citi Bike Members, by Year and Date")
 ```
 
 These results show that the total number of rides was highest in July 2024 for both casual and member riders. The lowest total number or rides was January 2020 for both type. This also signifies that with time, the total number of rides for casual rider and Citi Bike member utilization has risen. 
